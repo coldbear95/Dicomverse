@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lumina Red · Interoperabilidad de imagen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#18212B;--ink-soft:#5A6B7B;--ink-faint:#8A98A6;
+    --line:#E2E8EF;--line-soft:#EDF1F5;--surface:#FFFFFF;--app-bg:#EEF2F6;
+    --viewport:#06080C;--panel:#0E141C;
+    --teal:#0E9CA6;--teal-deep:#0B7D86;--teal-bright:#2BD4DE;
+    --signal:#5BE0C8;--amber:#E0A53C;--violet:#6B5BD2;--danger:#E5484D;
+    --radius:10px;--radius-sm:7px;--mono:'IBM Plex Mono',ui-monospace,monospace;--sans:'IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--sans);color:var(--ink);background:var(--app-bg);-webkit-font-smoothing:antialiased;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .hidden{display:none!important}
+
+  /* LOGIN */
+  #login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(1100px 560px at 82% -10%,rgba(107,91,210,.12),transparent 60%),
+      radial-gradient(900px 500px at -5% 110%,rgba(14,156,166,.12),transparent 55%),linear-gradient(180deg,#0A0F16,#070B11);overflow:hidden}
+  #login::before{content:"";position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask:radial-gradient(circle at 50% 40%,#000,transparent 75%)}
+  .login-card{position:relative;width:min(430px,92vw);background:rgba(20,28,38,.72);border:1px solid rgba(120,150,170,.18);
+    border-radius:16px;padding:36px 32px 28px;backdrop-filter:blur(14px);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:24px}
+  .brand .glyph{width:34px;height:34px;border-radius:9px;flex:none;background:linear-gradient(140deg,var(--teal-bright),var(--teal-deep));
+    display:grid;place-items:center;box-shadow:0 0 0 1px rgba(91,224,200,.3),0 6px 18px rgba(14,156,166,.4)}
+  .brand .glyph svg{width:19px;height:19px}
+  .brand h1{font-size:18px;font-weight:600;color:#EAF2F6;letter-spacing:-.01em}
+  .brand span{display:block;font-size:11px;color:#7FA0AC;font-weight:400}
+  .login-card h2{color:#DCE7EC;font-size:15px;font-weight:500;margin-bottom:4px}
+  .login-card .sub{color:#7C909C;font-size:12.5px;margin-bottom:20px}
+  .role-pick{display:flex;gap:10px;margin-bottom:18px}
+  .role-pick button{flex:1;padding:14px 10px;border:1px solid rgba(120,150,170,.22);border-radius:10px;background:rgba(8,12,18,.5);
+    color:#9FB4BF;text-align:left;transition:border-color .15s,background .15s}
+  .role-pick button .rt{display:block;font-size:14px;font-weight:600;color:#DCE7EC}
+  .role-pick button .rd{display:block;font-size:11.5px;margin-top:2px}
+  .role-pick button.on{border-color:var(--teal-bright);background:rgba(43,212,222,.1)}
+  .role-pick button.on .rt{color:var(--teal-bright)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#7E94A0;margin-bottom:6px;font-weight:500}
+  .field input,.field select{width:100%;background:rgba(8,12,18,.6);border:1px solid rgba(120,150,170,.22);border-radius:var(--radius-sm);
+    color:#E8F0F4;padding:11px 12px;font-size:14px}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--teal-bright);box-shadow:0 0 0 3px rgba(43,212,222,.16)}
+  .btn-primary{width:100%;background:linear-gradient(135deg,var(--teal-bright),var(--teal-deep));color:#04181B;font-weight:600;font-size:14px;
+    padding:12px;border-radius:var(--radius-sm);margin-top:6px;transition:filter .15s,transform .12s}
+  .btn-primary:hover{filter:brightness(1.06)}.btn-primary:active{transform:translateY(1px)}
+  .login-note{margin-top:16px;font-size:11.5px;color:#6B7E8A;line-height:1.5;text-align:center}
+  .login-note b{color:#9FB4BF;font-weight:600}
+
+  /* SHELL */
+  #app{display:flex;flex-direction:column;height:100%}
+  .topbar{height:52px;flex:none;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;z-index:20}
+  .topbar .glyph{width:26px;height:26px;border-radius:7px;flex:none;background:linear-gradient(140deg,var(--teal-bright),var(--teal-deep));display:grid;place-items:center}
+  .topbar .glyph svg{width:15px;height:15px}
+  .pname{font-weight:600;font-size:14.5px;letter-spacing:-.01em}
+  .pname small{color:var(--ink-faint);font-weight:400;font-size:12px;margin-left:2px}
+  .spacer{flex:1}
+  .lens{display:flex;background:var(--app-bg);border:1px solid var(--line);border-radius:20px;padding:2px}
+  .lens button{font-size:12px;font-weight:500;color:var(--ink-soft);padding:5px 12px;border-radius:16px}
+  .lens button.on{background:var(--surface);color:var(--teal-deep);box-shadow:0 1px 2px rgba(16,30,48,.1)}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;padding:5px 10px;border-radius:20px;border:1px solid var(--line)}
+  .chip .dot{width:7px;height:7px;border-radius:50%}
+  .chip.demo{background:#FFF6E8;border-color:#F2DDB4;color:#9A6B16}.chip.demo .dot{background:var(--amber)}
+  .chip.live{background:#E7F8F5;border-color:#B8E7DF;color:#0B7D86}.chip.live .dot{background:var(--teal)}
+  .chip.src{background:#EEF0FB;border-color:#CFCFF2;color:#4A3FA8}.chip.src .dot{background:var(--violet)}
+  .tb-btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-soft);padding:7px 10px;border-radius:var(--radius-sm);font-weight:500;transition:background .12s,color .12s}
+  .tb-btn:hover{background:var(--line-soft);color:var(--ink)}.tb-btn svg{width:15px;height:15px}
+
+  .body{flex:1;display:flex;min-height:0}
+  .side{width:clamp(340px,38%,500px);flex:none;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .side-head{padding:15px 16px 12px;border-bottom:1px solid var(--line-soft)}
+  .side-head .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .side-head h2{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .side-head .count{font-family:var(--mono);font-size:12px;color:var(--ink-faint);font-weight:500}
+  .side-head .who{margin-top:3px;font-size:12px;color:var(--ink-soft)}
+  .side-head .who b{color:var(--ink);font-weight:600}
+  .side-actions{display:flex;gap:8px;margin-top:12px}
+  .act-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:500;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--line);color:var(--ink-soft);background:var(--app-bg);transition:.12s}
+  .act-btn:hover{border-color:var(--teal);color:var(--teal-deep);background:#fff}
+  .act-btn.solid{background:linear-gradient(135deg,var(--teal-bright),var(--teal-deep));color:#04181B;border:none}
+  .act-btn svg{width:14px;height:14px}
+  .side-search{display:flex;gap:8px;margin-top:11px}
+  .side-search input{flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;background:var(--app-bg)}
+  .side-search input:focus{outline:none;border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px rgba(14,156,166,.12)}
+  .side-list{flex:1;overflow-y:auto;padding:8px}
+
+  .study{display:block;width:100%;text-align:left;padding:12px 13px;border-radius:var(--radius);border:1px solid transparent;margin-bottom:2px;transition:.12s}
+  .study:hover{background:var(--line-soft)}
+  .study.active{background:#E7F8F5;border-color:#B8E7DF}
+  .study .r1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .study .title{font-weight:600;font-size:13.5px}
+  .study .mod{font-family:var(--mono);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--ink);color:#fff;flex:none}
+  .study .mod.CT{background:#2563A8}.study .mod.MR{background:#6B3FA0}.study .mod.CR{background:#0B7D86}.study .mod.US{background:#9A6B16}
+  .study .src{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--violet);margin-top:6px;font-weight:500}
+  .study .src svg{width:12px;height:12px}
+  .study .meta{display:flex;gap:12px;margin-top:5px;font-size:12px;color:var(--ink-soft)}
+  .study .shared{margin-top:7px;font-size:11px;color:var(--teal-deep);font-weight:500;display:inline-flex;align-items:center;gap:5px}
+  .study .shared svg{width:12px;height:12px}
+  .study .grantmeta{margin-top:6px;font-size:11.5px;color:var(--ink-soft)}
+  .study .grantmeta b{color:var(--ink)}
+  .empty{padding:38px 22px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.5}
+
+  /* VIEWER (engine) */
+  .viewer{flex:1;background:var(--viewport);display:flex;flex-direction:column;min-width:0;position:relative}
+  .v-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#3C4A57;gap:14px;text-align:center;padding:30px}
+  .v-empty svg{width:52px;height:52px;opacity:.5}.v-empty p{font-size:13.5px;max-width:300px;line-height:1.5}
+  .toolbar{height:46px;flex:none;background:var(--panel);border-bottom:1px solid #1E2A36;display:flex;align-items:center;gap:3px;padding:0 8px;overflow-x:auto}
+  .tool{display:inline-flex;align-items:center;gap:6px;color:#9CB0BE;font-size:12.5px;font-weight:500;padding:7px 10px;border-radius:6px;white-space:nowrap;transition:.12s}
+  .tool svg{width:15px;height:15px}.tool:hover{background:#1B2632;color:#D9E6EE}.tool.on{background:rgba(43,212,222,.16);color:var(--teal-bright)}
+  .tsep{width:1px;height:22px;background:#243240;margin:0 4px;flex:none}
+  .v-main{flex:1;display:flex;min-height:0}
+  .thumbs{width:84px;flex:none;background:var(--panel);border-right:1px solid #1E2A36;overflow-y:auto;padding:8px 8px 30px}
+  .thumb{width:100%;aspect-ratio:1;border-radius:6px;overflow:hidden;margin-bottom:8px;border:2px solid transparent;background:#020305;position:relative;cursor:pointer;display:block}
+  .thumb.active{border-color:var(--teal-bright)}.thumb canvas{width:100%;height:100%;display:block}
+  .thumb .lbl{position:absolute;left:4px;bottom:3px;font-family:var(--mono);font-size:9px;color:#7E94A0;background:rgba(0,0,0,.5);padding:0 3px;border-radius:3px}
+  .stage{flex:1;position:relative;overflow:hidden;background:var(--viewport);touch-action:none}
+  #viewCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .ov{position:absolute;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--signal);text-shadow:0 1px 3px rgba(0,0,0,.9);pointer-events:none}
+  .ov.tl{top:10px;left:12px}.ov.tr{top:10px;right:12px;text-align:right}.ov.bl{bottom:10px;left:12px}.ov.br{bottom:10px;right:12px;text-align:right}
+  .ov .dim{color:#7FA0AC}
+  .scalebar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none}
+  .scalebar .bar{height:6px;border-left:2px solid var(--signal);border-right:2px solid var(--signal);border-bottom:2px solid var(--signal)}
+  .scalebar .lbl{font-family:var(--mono);font-size:10px;color:var(--signal);text-shadow:0 1px 2px #000}
+  .slicebar{position:absolute;right:14px;top:50%;transform:translateY(-50%);height:46%;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .slicebar input[type=range]{writing-mode:vertical-lr;direction:rtl;width:6px;height:100%;accent-color:var(--teal-bright)}
+  .slicebar .num{font-family:var(--mono);font-size:10px;color:#7FA0AC}
+  .collab{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(14,20,28,.85);border:1px solid #2BD4DE55;border-radius:20px;padding:5px 12px;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--signal)}
+  .collab .av{display:flex}.collab .av span{width:18px;height:18px;border-radius:50%;background:var(--teal-deep);border:1.5px solid #0E141C;margin-left:-6px;display:grid;place-items:center;font-size:9px;color:#fff;font-weight:600}
+  .collab .av span:first-child{margin-left:0;background:var(--violet)}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--signal);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .diag-banner{flex:none;background:#1A130A;border-top:1px solid #3A2A10;color:var(--amber);font-size:11px;padding:5px 14px;display:flex;align-items:center;gap:7px;font-weight:500}
+  .diag-banner svg{width:13px;height:13px;flex:none}
+
+  /* DRAWER / MODAL */
+  .scrim{position:fixed;inset:0;background:rgba(8,14,20,.5);z-index:40;display:flex;justify-content:flex-end}
+  .scrim.center{align-items:center;justify-content:center}
+  .drawer{width:min(400px,94vw);height:100%;background:var(--surface);box-shadow:-10px 0 40px rgba(0,0,0,.2);display:flex;flex-direction:column;animation:sl .2s ease}
+  .modal{width:min(480px,94vw);max-height:90vh;background:var(--surface);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;animation:sl .2s ease}
+  @keyframes sl{from{transform:translateX(16px);opacity:.6}to{transform:none;opacity:1}}
+  .dhead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex:none}
+  .dhead h3{font-size:15px;font-weight:600}
+  .dhead button{color:var(--ink-faint);padding:4px;border-radius:6px}.dhead button:hover{background:var(--line-soft);color:var(--ink)}
+  .dbody{padding:18px;overflow-y:auto}
+  .dbody p.hint{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-bottom:16px}
+  .dbody .field label{color:var(--ink-soft)}
+  .dbody .field input,.dbody .field select{background:var(--app-bg);border:1px solid var(--line);color:var(--ink)}
+  .dbody .field input:focus,.dbody .field select:focus{background:#fff;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,156,166,.12)}
+  .radio-row{display:flex;gap:8px;margin-bottom:14px}
+  .radio-row label{flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:500;color:var(--ink-soft);background:var(--app-bg);cursor:pointer;text-align:center}
+  .radio-row label.on{background:#E7F8F5;border-color:var(--teal);color:var(--teal-deep)}
+  .study-check{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;font-size:12.5px}
+  .study-check.on{border-color:var(--teal);background:#F2FBF9}
+  .study-check .cb{width:18px;height:18px;border:1.5px solid var(--ink-faint);border-radius:5px;flex:none;display:grid;place-items:center}
+  .study-check.on .cb{background:var(--teal);border-color:var(--teal)}
+  .study-check .cb svg{width:12px;height:12px;color:#fff;opacity:0}.study-check.on .cb svg{opacity:1}
+  .grant-card{border:1px solid var(--line);border-radius:var(--radius);padding:13px;margin-bottom:10px}
+  .grant-card.revoked{opacity:.55}
+  .grant-card .gr1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .grant-card .dr{font-weight:600;font-size:13.5px}
+  .grant-card .st{font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px}
+  .grant-card .st.active{background:#E7F8F5;color:#0B7D86}.grant-card .st.revoked{background:#F1EFE8;color:#5F5E5A}.grant-card .st.expired{background:#FCEBEB;color:#A32D2D}
+  .grant-card .gm{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.5}
+  .grant-card .gm b{color:var(--ink)}
+  .grant-card .revoke{margin-top:10px;font-size:12.5px;font-weight:500;color:var(--danger);border:1px solid #F0C4C4;border-radius:var(--radius-sm);padding:7px 10px;width:100%}
+  .grant-card .revoke:hover{background:#FCEBEB}
+  .inst-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:8px}
+  .inst-row .nm{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .inst-row .nm svg{width:15px;height:15px;color:var(--violet)}
+  .inst-row .sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .inst-row .connect{font-size:12.5px;font-weight:500;color:#04181B;background:linear-gradient(135deg,var(--teal-bright),var(--teal-deep));border-radius:var(--radius-sm);padding:7px 12px}
+  .inst-row.done .connect{background:var(--line-soft);color:var(--ink-soft)}
+  .audit-item{padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px;display:flex;gap:10px}
+  .audit-item:last-child{border:none}
+  .audit-item .t{font-family:var(--mono);font-size:11px;color:var(--ink-faint);flex:none;width:74px}
+  .audit-item .ic{width:24px;height:24px;border-radius:6px;flex:none;display:grid;place-items:center;background:var(--line-soft)}
+  .audit-item .ic svg{width:13px;height:13px;color:var(--ink-soft)}
+  .audit-item b{font-weight:600}
+  .modal .dbody{flex:1}
+  .modal-foot{padding:14px 18px;border-top:1px solid var(--line);flex:none}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13px;font-weight:500;
+    padding:11px 18px;border-radius:24px;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;transition:.25s;z-index:60;display:flex;gap:9px;align-items:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast svg{width:15px;height:15px;color:var(--signal)}
+
+  @media(max-width:760px){.side{width:100%;border-right:none}.body.viewing .side{display:none}.body:not(.viewing) .viewer{display:none}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand">
+      <div class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#04181B" stroke-width="2"/><circle cx="12" cy="12" r="3.4" fill="#04181B"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#04181B" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div><h1>Lumina Red<span>Interoperabilidad de imagen médica</span></h1></div>
+    </div>
+    <h2>Entra a la red</h2>
+    <p class="sub">Tus estudios de varias instituciones, en un solo lugar y bajo tu control.</p>
+    <div id="demoLogin">
+      <div class="role-pick" id="rolePick">
+        <button data-role="patient" class="on"><span class="rt">Paciente</span><span class="rd">Consolida y comparte tus estudios</span></button>
+        <button data-role="doctor"><span class="rt">Médico</span><span class="rd">Ve los estudios que te comparten</span></button>
+      </div>
+      <div class="field"><label>Nombre</label><input id="loginName" type="text" placeholder="Tu nombre"></div>
+    </div>
+    <div id="liveLogin" class="hidden">
+      <div class="role-pick hidden" id="signupRole">
+        <button data-role="patient" class="on"><span class="rt">Paciente</span><span class="rd">Cuenta nueva de paciente</span></button>
+        <button data-role="doctor"><span class="rt">Médico</span><span class="rd">Cuenta nueva de médico</span></button>
+      </div>
+      <div class="field hidden" id="suNameWrap"><label>Nombre</label><input id="suName" type="text" placeholder="Tu nombre"></div>
+      <div class="field"><label>Correo</label><input id="liEmail" type="email" placeholder="tu@correo.com" autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input id="liPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    </div>
+    <button class="btn-primary" id="loginBtn">Entrar</button>
+    <p class="login-note" id="demoNote">Modo demostración. Podrás cambiar entre vista de <b>Paciente</b> y <b>Médico</b> dentro.<br><a href="#" id="connectLink" style="color:#2BD4DE;font-weight:600">Conectar a Supabase →</a></p>
+    <p class="login-note hidden" id="liveNoteEl"><a href="#" id="toggleSignup" style="color:#2BD4DE;font-weight:600">¿Crear cuenta nueva?</a> · <a href="#" id="backToDemo" style="color:#7FA0AC">Volver a demo</a></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#04181B" stroke-width="2"/><circle cx="12" cy="12" r="3.4" fill="#04181B"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#04181B" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div class="pname">Lumina Red <small>imagen</small></div>
+    <div class="lens" id="lens"><button data-l="patient" class="on">Paciente</button><button data-l="doctor">Médico</button></div>
+    <span id="modeChip" class="chip demo"><span class="dot"></span>Demostración</span>
+    <span id="srcChip" class="chip src"><span class="dot"></span>3 instituciones</span>
+    <div class="spacer"></div>
+    <button class="tb-btn" id="activityBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Actividad</button>
+    <button class="tb-btn" id="settingsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 6.8 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.6H3a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.6V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8z"/></svg>Conexión</button>
+    <button class="tb-btn" id="logoutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+  </div>
+
+  <div class="body" id="bodyEl">
+    <div class="side">
+      <div class="side-head">
+        <div class="row"><h2 id="sideTitle">Mis estudios <span class="count" id="sideCount">0</span></h2></div>
+        <div class="who" id="sideWho">—</div>
+        <div class="side-actions" id="patientActions">
+          <button class="act-btn" id="connectBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg>Conectar institución</button>
+          <button class="act-btn solid" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>Compartir acceso</button>
+        </div>
+        <div class="side-search"><input id="sideQuery" type="text" placeholder="Buscar estudio, institución…"></div>
+      </div>
+      <div class="side-list" id="sideList"></div>
+    </div>
+
+    <div class="viewer" id="viewerEl">
+      <div class="v-empty" id="vEmpty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+        <p id="vEmptyMsg">Selecciona un estudio para abrirlo en el visor.</p>
+      </div>
+      <div id="vReady" class="hidden" style="display:flex;flex-direction:column;height:100%">
+        <div class="toolbar" id="toolbar">
+          <button class="tool" data-tool="pan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>Mover</button>
+          <button class="tool" data-tool="wl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>Brillo</button>
+          <button class="tool" data-tool="zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>Zoom</button>
+          <button class="tool" data-tool="measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 11l2 2M11 7l2 2M15 11l2 2"/></svg>Medir</button>
+          <div class="tsep"></div>
+          <button class="tool" id="invertBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>Invertir</button>
+          <button class="tool" id="fitBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>Ajustar</button>
+          <button class="tool" id="resetBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4"/></svg>Reiniciar</button>
+          <div class="tsep"></div>
+          <button class="tool" id="collabBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Colaborar</button>
+          <button class="tool" id="dlBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Descargar</button>
+        </div>
+        <div class="v-main">
+          <div class="thumbs" id="thumbs"></div>
+          <div class="stage" id="stage">
+            <canvas id="viewCanvas"></canvas>
+            <div class="collab hidden" id="collabBar"><div class="av"><span>H</span><span id="meAv">T</span></div><span id="collabTxt">En vivo</span><div class="pulse"></div></div>
+            <div class="ov tl" id="ovTL"></div><div class="ov tr" id="ovTR"></div><div class="ov bl" id="ovBL"></div><div class="ov br" id="ovBR"></div>
+            <div class="scalebar" id="scaleBar"><div class="bar" style="width:80px;height:6px"></div><div class="lbl">—</div></div>
+            <div class="slicebar" id="sliceBar"><div class="num" id="sliceTop">1</div><input type="range" id="sliceRange" min="0" max="0" value="0"><div class="num" id="sliceBot">1</div></div>
+          </div>
+        </div>
+        <div class="diag-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Visor de referencia — no apto para diagnóstico primario. Para diagnóstico, usar un visor certificado.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   CONFIGURACIÓN DE PILOTO
+   Pega la URL y la anon key de tu proyecto Supabase para que el
+   portal arranque ya conectado. Déjalas vacías para modo demo.
+   (Supabase → Project Settings → API)
+   ============================================================ */
+const SUPABASE_URL="https://llpzrnxfdiehfynwwxze.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_sjw8zbEVQw9llql6C1b8ig_c5CRgKmA";
+
+/* ===== DEMO DATA ===== */
+const PATIENT={name:"García Morales, Lucía",pid:"PAC-100493",sex:"F",age:"54A"};
+const DOCTOR={name:"Dra. Herrera",email:"dra.herrera@clinred.mx",spec:"Radiología"};
+const STUDIES=[
+  {id:"st1",source:"Clínica San José",mod:"CT",date:"2026-06-12",acc:"ACC-558012",desc:"TC de abdomen con contraste",series:{type:"ct",n:24,sdesc:"Abdomen / fase portal"}},
+  {id:"st2",source:"Centro Médico Andes",mod:"MR",date:"2026-02-18",acc:"ACC-771203",desc:"RM de rodilla derecha",series:{type:"mr",n:20,sdesc:"Rodilla / sagital T2"}},
+  {id:"st3",source:"Clínica San José",mod:"CR",date:"2025-11-03",acc:"ACC-557120",desc:"Radiografía de tórax PA",series:{type:"cr",n:2,sdesc:"Tórax PA / lateral"}},
+  {id:"st4",source:"Hospital del Valle",mod:"US",date:"2025-08-22",acc:"ACC-903441",desc:"Ecografía abdominal",series:{type:"us",n:12,sdesc:"Hipocondrio derecho"}},
+  {id:"st5",source:"Hospital del Valle",mod:"CT",date:"2024-12-05",acc:"ACC-902118",desc:"TC de cráneo simple",series:{type:"cthead",n:18,sdesc:"Cráneo axial"}}
+];
+const AVAILABLE=[
+  {name:"Laboratorio Imagen Sur",sub:"2 estudios disponibles",studies:[
+    {id:"st6",source:"Laboratorio Imagen Sur",mod:"CR",date:"2026-05-30",acc:"ACC-410088",desc:"Radiografía de columna lumbar",series:{type:"cr",n:2,sdesc:"Columna AP / lateral"}},
+    {id:"st7",source:"Laboratorio Imagen Sur",mod:"US",date:"2026-01-14",acc:"ACC-410012",desc:"Ecografía tiroidea",series:{type:"us",n:10,sdesc:"Tiroides"}}
+  ]}
+];
+
+const store={
+  studies:STUDIES.slice(),
+  sources:new Set(["Clínica San José","Centro Médico Andes","Hospital del Valle"]),
+  available:AVAILABLE.map(a=>({...a,connected:false})),
+  consents:[{id:"c0",doctor:DOCTOR.name,email:DOCTOR.email,scope:"selected",studyIds:["st4"],created:new Date(Date.now()-86400000*3),expiresDays:30,status:"active"}],
+  audit:[{t:new Date(Date.now()-86400000*3),actor:PATIENT.name.split(",")[0],action:"grant",detail:"Otorgó acceso a "+DOCTOR.name+" (1 estudio)"}]
+};
+
+const state={role:"patient",me:"",vp:{},images:[],idx:0,active:null,series:null,tool:"pan",measure:null,collab:false,mode:"demo",live:{base:"",token:""},isLive:false,_overlay:null};
+
+/* ===== LIVE LAYER (Supabase) ===== */
+let sb=null;const LIVE={url:"",anonKey:""};
+function connectSupabase(url,key){if(!window.supabase){toast("No se pudo cargar Supabase.");return false;}try{sb=window.supabase.createClient(url,key);LIVE.url=url;LIVE.anonKey=key;return true;}catch(e){toast("Config inválida: "+(e.message||e));return false;}}
+const MODMAP={CT:"ct",MR:"mr",CR:"cr",DX:"cr",DR:"cr",US:"us",NM:"ct",PT:"ct"};
+function studyType(mod,desc){let t=MODMAP[mod]||"ct";if(mod==="CT"&&/cr[aá]neo|cabeza|head/i.test(desc||""))t="cthead";return t;}
+function mapStudy(s,nameById){return{id:s.id,source:nameById[s.institution_id]||"Institución",mod:s.modality,date:s.study_date||"",acc:s.accession||s.study_uid||"",desc:s.description||"Estudio",series:{type:studyType(s.modality,s.description),n:s.series_count||1,sdesc:s.description||""}};}
+function mapConsent(c){return{id:c.id,doctor:c.grantee_email,email:c.grantee_email,scope:c.scope,studyIds:(c.consent_studies||[]).map(x=>x.study_id),created:new Date(c.created_at),expiresAt:c.expires_at?new Date(c.expires_at):null,status:c.status};}
+function mapAudit(a){return{t:new Date(a.created_at),actor:a.actor_label,action:a.action,detail:a.detail};}
+async function liveRefresh(){try{
+    const{data:insts}=await sb.from("institutions_public").select("id,name");
+    const nameById=Object.fromEntries((insts||[]).map(i=>[i.id,i.name]));
+    const{data:st}=await sb.from("studies").select("id,institution_id,modality,description,study_date,accession,series_count").order("study_date",{ascending:false});
+    store.studies=(st||[]).map(s=>mapStudy(s,nameById));
+    const{data:cs}=await sb.from("consents").select("id,grantee_email,scope,status,expires_at,created_at,consent_studies(study_id)").order("created_at",{ascending:false});
+    store.consents=(cs||[]).map(mapConsent);
+    store.sources=new Set(store.studies.map(s=>s.source));updateSrcChip();
+  }catch(e){toast("Error al cargar: "+(e.message||e));}
+  renderList();}
+async function liveLoadAudit(){try{const{data}=await sb.from("audit_events").select("created_at,actor_label,action,detail").order("created_at",{ascending:false}).limit(80);store.audit=(data||[]).map(mapAudit);}catch(e){store.audit=[];}}
+async function liveGrant(email,scope,ids,expISO){const{error}=await sb.rpc("grant_access",{p_grantee_email:email,p_scope:scope,p_study_ids:scope==="all"?[]:ids,p_expires_at:expISO});if(error)throw error;await liveRefresh();}
+async function liveRevoke(id){const{error}=await sb.rpc("revoke_access",{p_consent_id:id});if(error)throw error;await liveRefresh();}
+async function liveLogView(id){try{await sb.rpc("log_view",{p_study_id:id});}catch(e){}}
+
+/* ===== IMAGE ENGINE ===== */
+function rngFactory(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return((s>>>0)/4294967296);};}
+function clampU(v){v=Math.round(v);return v<0?0:v>4095?4095:v;}
+function genCT(seed,slice,total,head){const W=360,H=360,d=new Uint16Array(W*H),rnd=rngFactory(seed*97+slice*13);const cx=W/2,cy=H/2;const t=(slice/(total-1))-0.5;const bodyR=head?115:138-Math.abs(t)*26;const skull=head?14:0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=x-cx,dy=y-cy,r=Math.hypot(dx,dy);let v=-1000;
+    if(r<bodyR){v=40+(rnd()-0.5)*30;
+      if(head){if(r>bodyR-skull)v=900+(rnd()-0.5)*120;else{const br=Math.hypot(dx,dy*1.15);v=br<bodyR-skull-4?34+(rnd()-0.5)*22:40;if(Math.abs(dx)<6&&Math.abs(dy)<24)v=8;}}
+      else{const o1=Math.hypot(dx+38,dy+10);if(o1<46)v=58+(rnd()-0.5)*26;const o2=Math.hypot(dx-44,dy+6);if(o2<26)v=48+(rnd()-0.5)*22;const sp=Math.hypot(dx,dy-44);if(sp<13)v=420+(rnd()-0.5)*160;if(Math.hypot(dx,dy-44)<5)v=120;
+        if(Math.abs(t)<0.18){const lL=Math.hypot(dx+46,dy+4),lR=Math.hypot(dx-46,dy+4);if(lL<40||lR<40)v=-780+(rnd()-0.5)*120;}}
+    }else if(r<bodyR+3){v=-200;}
+    d[y*W+x]=clampU(v+1024);}
+  return{w:W,h:H,data:d,ww:head?90:400,wc:head?40:50,spacing:head?0.49:0.68,rescaleInt:-1024};}
+function genCR(seed,which){const W=420,H=512,d=new Uint16Array(W*H),rnd=rngFactory(seed*131+which*7);const cx=W/2;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const nx=(x-cx)/(W*0.5),ny=(y-H*0.42)/(H*0.5);let v=160+(rnd()-0.5)*40;const inT=(nx*nx/0.78+ny*ny/0.95)<1;
+    if(inT){v=420+(rnd()-0.5)*60;const lung=Math.min(Math.hypot((x-cx+78),(y-H*0.42)),Math.hypot((x-cx-78),(y-H*0.42)));if(lung<120&&Math.abs(nx)>0.12)v=120+(rnd()-0.5)*60;
+      if(Math.abs(x-cx)<14)v=820+(rnd()-0.5)*120;
+      for(let rb=0;rb<9;rb++){const ry=H*0.18+rb*34;const arc=Math.abs(Math.hypot((x-cx)*0.9,(y-ry))-(60+rb*16));if(arc<3&&y<ry+60)v=Math.max(v,760);}
+      if(Math.hypot((x-cx+28)/1.1,(y-H*0.55)/1.25)<70)v=Math.max(v,520);
+      if(y<H*0.2&&Math.abs(Math.abs(x-cx)-70)<4)v=Math.max(v,760);}
+    if(y>H*0.9)v=80;d[y*W+x]=clampU(v*4);}
+  return{w:W,h:H,data:d,ww:2600,wc:1500,spacing:0.143,rescaleInt:0};}
+function genUS(seed,frame){const W=420,H=380,d=new Uint16Array(W*H),rnd=rngFactory(seed*53+frame*29);const apex={x:W/2,y:18},spread=0.62,maxR=H-40;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=x-apex.x,dy=y-apex.y,r=Math.hypot(dx,dy),ang=Math.atan2(dx,dy);let v=0;
+    if(Math.abs(ang)<spread&&r<maxR&&r>10){const at=Math.max(0,1-r/maxR);v=70+rnd()*120*at+(rnd()*rnd())*60*at;const cyR=Math.hypot(dx-(28*Math.sin(frame/3)),dy-(maxR*0.55));if(cyR<46)v*=0.12;if(cyR>=46&&cyR<50)v=Math.min(255,v+90);if(Math.abs(r-maxR*0.4)<2&&Math.abs(ang)<0.4)v=Math.min(255,v+90);}
+    d[y*W+x]=clampU(v*16);}
+  return{w:W,h:H,data:d,ww:3600,wc:1800,spacing:0.20,rescaleInt:0};}
+function genMR(seed,slice,total){const W=360,H=360,d=new Uint16Array(W*H),rnd=rngFactory(seed*61+slice*11);const cx=W/2,cy=H/2;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=x-cx,dy=y-cy,r=Math.hypot(dx,dy);let v=20+(rnd()-0.5)*20;
+    if(r<120){v=520+(rnd()-0.5)*120;const f=Math.hypot(dx+2,dy+60-slice*1.5);if(f<34)v=f>30?60:760;const tb=Math.hypot(dx-4,dy-66+slice*1.2);if(tb<30)v=tb>26?60:720;if(Math.abs(dy)<8&&Math.abs(dx)<54)v=920+(rnd()-0.5)*80;if(Math.abs(dy)<16&&Math.abs(dx)<48)v=Math.max(v,300);}
+    d[y*W+x]=clampU(v*4);}
+  return{w:W,h:H,data:d,ww:2400,wc:1200,spacing:0.31,rescaleInt:0};}
+function buildSeriesImages(type,n,seed){const out=[];for(let i=0;i<n;i++){if(type==="ct")out.push(genCT(seed,i,n,false));else if(type==="cthead")out.push(genCT(seed,i,n,true));else if(type==="cr")out.push(genCR(seed,i));else if(type==="us")out.push(genUS(seed,i));else if(type==="mr")out.push(genMR(seed,i,n));}return out;}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+
+const offCanvas=document.createElement("canvas"),offCtx=offCanvas.getContext("2d");
+function renderImageBuffer(img,vp){const{w,h,data}=img;const rescaleInt=(vp.rescaleInt!=null?vp.rescaleInt:(img.rescaleInt||0));offCanvas.width=w;offCanvas.height=h;const id=offCtx.createImageData(w,h),o=id.data;const low=vp.wc-vp.ww/2,scale=255/vp.ww,inv=vp.invert;
+  for(let i=0;i<data.length;i++){let g=((data[i]+rescaleInt)-low)*scale;if(g<0)g=0;else if(g>255)g=255;if(inv)g=255-g;const k=i*4;o[k]=o[k+1]=o[k+2]=g;o[k+3]=255;}
+  offCtx.putImageData(id,0,0);return offCanvas;}
+const stage=document.getElementById("stage"),vc=document.getElementById("viewCanvas"),vctx=vc.getContext("2d");
+function resizeCanvas(){const r=stage.getBoundingClientRect(),dpr=window.devicePixelRatio||1;vc.width=Math.round(r.width*dpr);vc.height=Math.round(r.height*dpr);vctx.setTransform(dpr,0,0,dpr,0,0);}
+function fitScaleFor(img){const r=stage.getBoundingClientRect();return Math.min(r.width/img.w,r.height/img.h)*0.94;}
+function draw(){if(!state.images.length)return;const img=state.images[state.idx],vp=state.vp;const buf=renderImageBuffer(img,vp);const r=stage.getBoundingClientRect();vctx.clearRect(0,0,r.width,r.height);vctx.imageSmoothingEnabled=true;
+  const s=vp.fitScale*vp.zoom,dw=img.w*s,dh=img.h*s,ox=(r.width-dw)/2+vp.panX,oy=(r.height-dh)/2+vp.panY;vctx.drawImage(buf,ox,oy,dw,dh);
+  if(state.measure&&state.measure.a&&state.measure.b){const a=sc(state.measure.a,s,ox,oy),b=sc(state.measure.b,s,ox,oy);vctx.strokeStyle="#5BE0C8";vctx.lineWidth=1.5;vctx.beginPath();vctx.moveTo(a.x,a.y);vctx.lineTo(b.x,b.y);vctx.stroke();for(const p of[a,b]){vctx.beginPath();vctx.arc(p.x,p.y,3,0,7);vctx.fillStyle="#5BE0C8";vctx.fill();}
+    const mm=Math.hypot(state.measure.a.x-state.measure.b.x,state.measure.a.y-state.measure.b.y)*img.spacing;const lbl=mm>=10?(mm/10).toFixed(1)+" cm":mm.toFixed(1)+" mm";vctx.font="12px 'IBM Plex Mono'";vctx.fillStyle="#5BE0C8";vctx.fillText(lbl,(a.x+b.x)/2+6,(a.y+b.y)/2-6);}
+  overlays(img,s);}
+function sc(p,s,ox,oy){return{x:ox+p.x*s,y:oy+p.y*s};}
+function screenToImg(sx,sy){const img=state.images[state.idx],vp=state.vp,r=stage.getBoundingClientRect();const s=vp.fitScale*vp.zoom,dw=img.w*s,dh=img.h*s,ox=(r.width-dw)/2+vp.panX,oy=(r.height-dh)/2+vp.panY;return{x:(sx-ox)/s,y:(sy-oy)/s};}
+function overlays(img,s){const st=state.active,se=state.series;
+  document.getElementById("ovTL").innerHTML=`<span>${esc(PATIENT.name)}</span><br><span class="dim">${esc(PATIENT.pid)} · ${PATIENT.sex} · ${PATIENT.age}</span>`;
+  document.getElementById("ovTR").innerHTML=`<span>${esc(st.desc)}</span><br><span class="dim">${esc(st.source)}</span><br><span class="dim">${st.date}</span>`;
+  document.getElementById("ovBL").innerHTML=`Im ${state.idx+1}/${state.images.length}<br><span class="dim">${st.mod} · ${img.w}×${img.h}</span>`;
+  document.getElementById("ovBR").innerHTML=`WL ${Math.round(state.vp.wc)} / WW ${Math.round(state.vp.ww)}<br><span class="dim">Zoom ${Math.round(state.vp.zoom*100)}%</span>`;
+  const pxMM=s/img.spacing;let tg=10;for(const L of[5,10,20,50,100,150])if(L*pxMM<120)tg=L;document.querySelector("#scaleBar .bar").style.width=(tg*pxMM)+"px";document.querySelector("#scaleBar .lbl").textContent=tg>=10?(tg/10)+" cm":tg+" mm";}
+function esc(s){return(s+"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function buildThumbs(){const wrap=document.getElementById("thumbs");wrap.innerHTML="";state.images.forEach((img,i)=>{const b=document.createElement("button");b.className="thumb"+(i===state.idx?" active":"");const c=document.createElement("canvas");c.width=64;c.height=64;const cx=c.getContext("2d");const buf=renderImageBuffer(img,{ww:img.ww,wc:img.wc,invert:false,rescaleInt:img.rescaleInt});const sc2=Math.min(64/img.w,64/img.h),dw=img.w*sc2,dh=img.h*sc2;cx.fillStyle="#020305";cx.fillRect(0,0,64,64);cx.drawImage(buf,(64-dw)/2,(64-dh)/2,dw,dh);b.appendChild(c);const l=document.createElement("span");l.className="lbl";l.textContent=i+1;b.appendChild(l);b.onclick=()=>{state.idx=i;syncSlice();markThumb();draw();};wrap.appendChild(b);});}
+function markThumb(){document.querySelectorAll(".thumb").forEach((t,i)=>t.classList.toggle("active",i===state.idx));}
+function syncSlice(){document.getElementById("sliceRange").value=state.idx;document.getElementById("sliceTop").textContent=state.idx+1;}
+
+/* ===== CONSENT LOGIC ===== */
+function isExpired(c){if(c.expiresAt)return Date.now()>c.expiresAt.getTime();if(!c.expiresDays)return false;return Date.now()>c.created.getTime()+c.expiresDays*86400000;}
+function grantStatus(c){if(c.status==="revoked")return"revoked";if(isExpired(c))return"expired";return"active";}
+function studiesForDoctor(){return store.studies.filter(s=>store.consents.some(c=>c.email===DOCTOR.email&&grantStatus(c)==="active"&&(c.scope==="all"||c.studyIds.includes(s.id))));}
+function sharedInfo(studyId){const c=store.consents.find(c=>grantStatus(c)==="active"&&(c.scope==="all"||c.studyIds.includes(studyId)));return c?c.doctor:null;}
+
+/* ===== LIST RENDER ===== */
+function srcIcon(){return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg>';}
+function renderList(){
+  const q=document.getElementById("sideQuery").value.trim().toLowerCase();
+  let list=state.isLive?store.studies.slice():(state.role==="patient"?store.studies.slice():studiesForDoctor());
+  list.sort((a,b)=>b.date.localeCompare(a.date));
+  if(q)list=list.filter(s=>(s.desc+" "+s.source+" "+s.acc+" "+s.mod).toLowerCase().includes(q));
+  document.getElementById("sideCount").textContent=list.length;
+  const el=document.getElementById("sideList");el.innerHTML="";
+  if(!list.length){el.innerHTML=`<div class="empty">${state.role==="patient"?"No tienes estudios que coincidan.":"Aún no hay estudios compartidos contigo.<br>Cuando un paciente te otorgue acceso, aparecerán aquí."}</div>`;return;}
+  for(const s of list){
+    const b=document.createElement("button");b.className="study"+(state.active&&state.active.id===s.id?" active":"");b.dataset.id=s.id;
+    let extra="";
+    if(state.role==="patient"){const sh=sharedInfo(s.id);extra=sh?`<div class="shared"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>Compartido con ${esc(sh)}</div>`:"";}
+    else{extra=`<div class="grantmeta">Paciente: <b>${esc(PATIENT.name)}</b></div>`;}
+    b.innerHTML=`<div class="r1"><span class="title">${esc(s.desc)}</span><span class="mod ${s.mod}">${s.mod}</span></div>
+      <div class="src">${srcIcon()}${esc(s.source)}</div>
+      <div class="meta"><span class="mono">${s.date}</span><span class="mono">${esc(s.acc)}</span><span>${s.series.n} img</span></div>${extra}`;
+    b.onclick=()=>openStudy(s);el.appendChild(b);}
+}
+function setRole(role){
+  state.role=role;state.active=null;
+  document.querySelectorAll("#lens button").forEach(b=>b.classList.toggle("on",b.dataset.l===role));
+  document.getElementById("patientActions").style.display=role==="patient"?"flex":"none";
+  document.getElementById("sideTitle").firstChild.textContent=role==="patient"?"Mis estudios ":"Compartidos conmigo ";
+  document.getElementById("sideWho").innerHTML=role==="patient"?`Paciente: <b>${esc(PATIENT.name)}</b>`:`Médico: <b>${esc(state.me||DOCTOR.name)}</b> · ${DOCTOR.spec}`;
+  document.getElementById("shareBtn").querySelector("span")?.remove?.();
+  document.getElementById("vEmptyMsg").textContent=role==="patient"?"Selecciona un estudio para verlo o compartirlo.":"Selecciona un estudio compartido para abrirlo.";
+  document.getElementById("vEmpty").classList.remove("hidden");document.getElementById("vReady").classList.add("hidden");
+  document.getElementById("bodyEl").classList.remove("viewing");
+  renderList();
+}
+
+/* ===== OPEN STUDY ===== */
+function openStudy(s){
+  state.active=s;state.series=s.series;
+  document.querySelectorAll(".study").forEach(e=>e.classList.toggle("active",e.dataset.id===s.id));
+  document.getElementById("vEmpty").classList.add("hidden");document.getElementById("vReady").classList.remove("hidden");
+  document.getElementById("bodyEl").classList.add("viewing");
+  state.images=buildSeriesImages(s.series.type,s.series.n,hash(s.acc));state.idx=0;
+  const img=state.images[0];state.vp={zoom:1,panX:0,panY:0,ww:img.ww,wc:img.wc,invert:false,fitScale:fitScaleFor(img),rescaleInt:img.rescaleInt};state.measure=null;
+  const rng=document.getElementById("sliceRange");rng.max=state.images.length-1;rng.value=0;document.getElementById("sliceBot").textContent=state.images.length;document.getElementById("sliceBar").style.display=state.images.length>1?"flex":"none";
+  resizeCanvas();buildThumbs();draw();
+  if(state.role==="doctor"){if(state.isLive)liveLogView(s.id);else logAudit(state.me||DOCTOR.name,"view","Vio "+s.mod+" · "+s.desc,s.id);}
+}
+
+/* ===== INTERACTION ===== */
+function setTool(t){state.tool=t;document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.toggle("on",b.dataset.tool===t));}
+document.querySelectorAll('.tool[data-tool]').forEach(b=>b.onclick=()=>{if(b.dataset.tool==="measure")state.measure=null;setTool(b.dataset.tool);draw();});
+let last=null,pinch=null;
+function ep(e){const r=stage.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+function td(e){const a=e.touches[0],b=e.touches[1];return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);}
+function onDown(e){if(!state.images.length)return;if(e.touches&&e.touches.length===2){pinch={d:td(e),zoom:state.vp.zoom};return;}const p=ep(e);last=p;if(state.tool==="measure"){const ip=screenToImg(p.x,p.y);if(!state.measure||state.measure.b){state.measure={a:ip,b:ip};}else{state.measure.b=ip;}draw();}e.preventDefault();}
+function onMove(e){if(e.touches&&e.touches.length===2&&pinch){state.vp.zoom=Math.max(0.2,Math.min(8,pinch.zoom*td(e)/pinch.d));draw();return;}if(!last)return;const p=ep(e),dx=p.x-last.x,dy=p.y-last.y;if(state.tool==="pan"){state.vp.panX+=dx;state.vp.panY+=dy;}else if(state.tool==="zoom"){state.vp.zoom=Math.max(0.2,Math.min(8,state.vp.zoom*(1-dy*0.005)));}else if(state.tool==="wl"){state.vp.ww=Math.max(1,state.vp.ww+dx*(state.vp.ww*0.004+1));state.vp.wc+=dy*(state.vp.ww*0.002+0.5);}else if(state.tool==="measure"&&state.measure){state.measure.b=screenToImg(p.x,p.y);}last=p;draw();e.preventDefault();}
+function onUp(){last=null;pinch=null;}
+stage.addEventListener("mousedown",onDown);window.addEventListener("mousemove",onMove);window.addEventListener("mouseup",onUp);
+stage.addEventListener("touchstart",onDown,{passive:false});stage.addEventListener("touchmove",onMove,{passive:false});stage.addEventListener("touchend",onUp);
+stage.addEventListener("wheel",e=>{if(!state.images.length)return;e.preventDefault();if(e.ctrlKey){state.vp.zoom=Math.max(0.2,Math.min(8,state.vp.zoom*(1-e.deltaY*0.0015)));}else{state.idx=Math.max(0,Math.min(state.images.length-1,state.idx+(e.deltaY>0?1:-1)));syncSlice();markThumb();}draw();},{passive:false});
+document.getElementById("sliceRange").addEventListener("input",e=>{state.idx=+e.target.value;document.getElementById("sliceTop").textContent=state.idx+1;markThumb();draw();});
+document.getElementById("invertBtn").onclick=()=>{state.vp.invert=!state.vp.invert;draw();};
+document.getElementById("fitBtn").onclick=()=>{const img=state.images[state.idx];state.vp.fitScale=fitScaleFor(img);state.vp.zoom=1;state.vp.panX=state.vp.panY=0;draw();};
+document.getElementById("resetBtn").onclick=()=>{const img=state.images[state.idx];state.vp={zoom:1,panX:0,panY:0,ww:img.ww,wc:img.wc,invert:false,fitScale:fitScaleFor(img),rescaleInt:img.rescaleInt};state.measure=null;draw();};
+document.getElementById("collabBtn").onclick=()=>{state.collab=!state.collab;document.getElementById("collabBtn").classList.toggle("on",state.collab);document.getElementById("collabBar").classList.toggle("hidden",!state.collab);if(state.collab){document.getElementById("collabTxt").textContent="Sesión en vivo · "+DOCTOR.name+" y tú";toast("Sesión compartida activa (demo)");}else toast("Sesión compartida finalizada");};
+document.getElementById("dlBtn").onclick=()=>{const st=state.active;if(!st)return;const blob=new Blob([JSON.stringify({plataforma:"Lumina Red",paciente:PATIENT.name,estudio:st.desc,fuente:st.source,modalidad:st.mod,fecha:st.date,accession:st.acc,imagenes:state.images.length,nota:"Manifiesto demo. En modo conectado descarga el DICOM real vía WADO-RS."},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=st.acc+".json";a.click();URL.revokeObjectURL(a.href);logAudit(state.role==="doctor"?(state.me||DOCTOR.name):PATIENT.name.split(",")[0],"download","Descargó "+st.desc,st.id);toast("Manifiesto descargado");};
+window.addEventListener("resize",()=>{if(state.images.length){const img=state.images[state.idx];state.vp.fitScale=fitScaleFor(img);resizeCanvas();draw();}});
+
+/* ===== SHARE / CONSENT UI ===== */
+function openShare(){
+  const studyOpts=store.studies.map(s=>`<label class="study-check" data-id="${s.id}"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span><span>${esc(s.desc)} · <span class="mono">${s.date}</span></span></label>`).join("");
+  const html=`<p class="hint">Otorgas acceso a un médico a estudios específicos, con vencimiento opcional. Esto crea un consentimiento (modelo <span class="mono">FHIR Consent</span>) que puedes revocar cuando quieras.</p>
+    <div class="field"><label>Médico</label><input id="grName" type="text" value="${esc(DOCTOR.name)}"></div>
+    <div class="field"><label>Correo del médico</label><input id="grEmail" type="text" value="${esc(DOCTOR.email)}"></div>
+    <div class="field"><label>Alcance</label><div class="radio-row" id="scopeRow"><label data-s="all">Todos mis estudios</label><label data-s="selected" class="on">Seleccionar</label></div></div>
+    <div id="selWrap"><div class="field"><label>Estudios a compartir</label>${studyOpts}</div></div>
+    <div class="field"><label>Vencimiento</label><select id="grExp"><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="0">Sin vencimiento</option></select></div>`;
+  openModal("Compartir acceso",html,`<button class="btn-primary" id="grSave" style="color:#04181B">Otorgar acceso</button>`);
+  let scope="selected";const sel=new Set();
+  document.querySelectorAll("#scopeRow label").forEach(l=>l.onclick=()=>{document.querySelectorAll("#scopeRow label").forEach(x=>x.classList.remove("on"));l.classList.add("on");scope=l.dataset.s;document.getElementById("selWrap").style.display=scope==="selected"?"block":"none";});
+  document.querySelectorAll(".study-check").forEach(l=>l.onclick=()=>{const id=l.dataset.id;if(sel.has(id)){sel.delete(id);l.classList.remove("on");}else{sel.add(id);l.classList.add("on");}});
+  document.getElementById("grSave").onclick=async()=>{
+    if(scope==="selected"&&!sel.size){toast("Selecciona al menos un estudio.");return;}
+    const email=document.getElementById("grEmail").value.trim()||DOCTOR.email;
+    const days=+document.getElementById("grExp").value;
+    if(state.isLive){
+      const expISO=days?new Date(Date.now()+days*86400000).toISOString():null;
+      try{await liveGrant(email,scope,[...sel],expISO);closeOverlay();toast("Acceso otorgado a "+email);}
+      catch(e){toast("No se pudo otorgar: "+(e.message||e));}
+      return;
+    }
+    const c={id:"c"+Date.now(),doctor:document.getElementById("grName").value.trim()||DOCTOR.name,email,scope,studyIds:scope==="all"?[]:[...sel],created:new Date(),expiresAt:days?new Date(Date.now()+days*86400000):null,status:"active"};
+    store.consents.push(c);
+    logAudit(PATIENT.name.split(",")[0],"grant","Otorgó acceso a "+c.doctor+(scope==="all"?" (todos los estudios)":" ("+sel.size+" estudio"+(sel.size>1?"s":"")+")"));
+    closeOverlay();renderList();toast("Acceso otorgado a "+c.doctor);
+  };
+}
+function openAccesses(){
+  const cards=store.consents.slice().reverse().map(c=>{const st=grantStatus(c);const scopeTxt=c.scope==="all"?"Todos los estudios":c.studyIds.length+" estudio"+(c.studyIds.length>1?"s":"");const exp=c.expiresAt?("vence "+c.expiresAt.toLocaleDateString("es",{day:"2-digit",month:"short"})):(c.expiresDays?("vence en "+Math.max(0,Math.ceil((c.created.getTime()+c.expiresDays*86400000-Date.now())/86400000))+" días"):"sin vencimiento");
+    return `<div class="grant-card ${st==="revoked"?"revoked":""}"><div class="gr1"><span class="dr">${esc(c.doctor)}</span><span class="st ${st}">${st==="active"?"Activo":st==="expired"?"Vencido":"Revocado"}</span></div>
+      <div class="gm"><b>${scopeTxt}</b> · ${exp}<br><span class="mono">${esc(c.email)}</span></div>
+      ${st==="active"?`<button class="revoke" data-id="${c.id}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M18 6 6 18M6 6l12 12"/></svg> Revocar acceso</button>`:""}</div>`;}).join("");
+  openDrawer("Accesos compartidos",cards||'<div class="empty">No has compartido ningún estudio todavía.</div>',
+    '<p class="hint" style="margin-top:14px">Cada acceso es un consentimiento revocable. Al revocar, el médico deja de ver el estudio de inmediato.</p>');
+  document.querySelectorAll(".revoke").forEach(b=>b.onclick=async()=>{
+    if(state.isLive){try{await liveRevoke(b.dataset.id);openAccesses();toast("Acceso revocado");}catch(e){toast("No se pudo revocar: "+(e.message||e));}return;}
+    const c=store.consents.find(x=>x.id===b.dataset.id);if(c){c.status="revoked";logAudit(PATIENT.name.split(",")[0],"revoke","Revocó acceso a "+c.doctor);openAccesses();renderList();toast("Acceso revocado");}});
+}
+function openConnect(){
+  if(state.isLive){toast("En producción, las instituciones se conectan vía el conector edge.");return;}
+  const rows=store.available.map((a,i)=>`<div class="inst-row ${a.connected?"done":""}"><div><div class="nm">${srcIcon()}${esc(a.name)}</div><div class="sub">${a.connected?"Conectada · estudios consolidados":esc(a.sub)}</div></div><button class="connect" data-i="${i}" ${a.connected?"disabled":""}>${a.connected?"Conectada":"Conectar"}</button></div>`).join("");
+  openModal("Conectar institución",`<p class="hint">Vincula otra institución para consolidar tus estudios. La plataforma localiza tus estudios por identidad (EMPI) y los suma a tu vista vía <span class="mono">DICOMweb</span>.</p>${rows||'<div class="empty">No hay más instituciones disponibles.</div>'}`,"");
+  document.querySelectorAll(".inst-row .connect").forEach(b=>b.onclick=()=>{const a=store.available[+b.dataset.i];if(a.connected)return;a.connected=true;a.studies.forEach(s=>store.studies.push(s));store.sources.add(a.name);updateSrcChip();logAudit(PATIENT.name.split(",")[0],"connect","Conectó "+a.name+" ("+a.studies.length+" estudios)");openConnect();renderList();toast(a.name+" conectada");});
+}
+function updateSrcChip(){document.querySelector("#srcChip").innerHTML=`<span class="dot"></span>${store.sources.size} instituciones`;}
+
+/* ===== AUDIT ===== */
+function logAudit(actor,action,detail,studyId){store.audit.unshift({t:new Date(),actor,action,detail,studyId});if(store.audit.length>80)store.audit.pop();}
+async function openActivity(){
+  if(state.isLive)await liveLoadAudit();
+  const visible=state.role==="doctor"?store.audit.filter(a=>a.action==="view"||a.action==="download"):store.audit;
+  const items=visible.map(a=>{const ic=a.action==="download"?'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>':a.action==="grant"?'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>':a.action==="revoke"?'<path d="M18 6 6 18M6 6l12 12"/>':a.action==="connect"?'<path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/>':'<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>';
+    return `<div class="audit-item"><span class="t">${a.t.toLocaleDateString("es",{day:"2-digit",month:"short"})} ${a.t.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg></span><span><b>${esc(a.actor)}</b> · ${esc(a.detail)}</span></div>`;}).join("");
+  openDrawer("Registro de actividad",items||'<div class="empty">Sin actividad aún.</div>',
+    `<p class="hint" style="margin-top:14px">${state.role==="patient"?"Ves cada acceso a tus estudios y cada cambio de permisos.":"Ves tus propios accesos."} En producción son eventos de auditoría <span class="mono">ATNA / AuditEvent</span>.</p>`);
+}
+
+/* ===== SETTINGS ===== */
+function openSettings(){
+  const html=`<p class="hint">En <b>Conectado</b>, la plataforma federa por <span class="mono">DICOMweb</span> y consulta <span class="mono">FHIR</span> en lugar de usar datos demo.</p>
+    <div class="field"><label>Endpoint FHIR</label><input id="cfgF" type="text" placeholder="https://api.tu-red.com/fhir" value="${esc(state.live.fhir||"")}"></div>
+    <div class="field"><label>Endpoint DICOMweb</label><input id="cfgD" type="text" placeholder="https://api.tu-red.com/dicom-web" value="${esc(state.live.base||"")}"></div>
+    <div class="field"><label>Token Bearer</label><input id="cfgT" type="password" placeholder="token" value="${esc(state.live.token||"")}"></div>`;
+  openModal("Conexión a la red",html,`<button class="btn-primary" id="cfgSave" style="color:#04181B">Guardar</button>`);
+  document.getElementById("cfgSave").onclick=()=>{state.live.fhir=document.getElementById("cfgF").value.trim();state.live.base=document.getElementById("cfgD").value.trim();state.live.token=document.getElementById("cfgT").value.trim();closeOverlay();toast(state.live.base?"Endpoints guardados (la federación real requiere backend)":"Guardado");};
+}
+
+/* ===== OVERLAY HELPERS ===== */
+function openDrawer(title,body,foot=""){const s=document.createElement("div");s.className="scrim";s.onclick=e=>{if(e.target===s)closeOverlay();};s.innerHTML=`<div class="drawer"><div class="dhead"><h3>${title}</h3><button onclick="closeOverlay()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="dbody">${body}${foot}</div></div>`;document.body.appendChild(s);state._overlay=s;}
+function openModal(title,body,foot=""){const s=document.createElement("div");s.className="scrim center";s.onclick=e=>{if(e.target===s)closeOverlay();};s.innerHTML=`<div class="modal"><div class="dhead"><h3>${title}</h3><button onclick="closeOverlay()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="dbody">${body}</div>${foot?`<div class="modal-foot">${foot}</div>`:""}</div>`;document.body.appendChild(s);state._overlay=s;}
+function closeOverlay(){if(state._overlay){state._overlay.remove();state._overlay=null;}}
+window.closeOverlay=closeOverlay;
+let toastT;function toast(m){const t=document.getElementById("toast");document.getElementById("toastMsg").textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
+
+/* ===== BOOT ===== */
+state._loginUI="demo";let signupMode=false;
+document.querySelectorAll("#rolePick button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#rolePick button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state._loginRole=b.dataset.role;});
+document.querySelectorAll("#signupRole button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#signupRole button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state._signupRole=b.dataset.role;});
+
+function switchToLiveUI(){state._loginUI="live";document.getElementById("demoLogin").classList.add("hidden");document.getElementById("liveLogin").classList.remove("hidden");document.getElementById("demoNote").classList.add("hidden");document.getElementById("liveNoteEl").classList.remove("hidden");document.querySelector("#login h2").textContent="Inicia sesión";}
+function switchToDemoUI(){state._loginUI="demo";signupMode=false;document.getElementById("liveLogin").classList.add("hidden");document.getElementById("demoLogin").classList.remove("hidden");document.getElementById("liveNoteEl").classList.add("hidden");document.getElementById("demoNote").classList.remove("hidden");document.querySelector("#login h2").textContent="Entra a la red";}
+function toggleSignupMode(){signupMode=!signupMode;document.getElementById("signupRole").classList.toggle("hidden",!signupMode);document.getElementById("suNameWrap").classList.toggle("hidden",!signupMode);document.getElementById("loginBtn").textContent=signupMode?"Crear cuenta":"Entrar";document.getElementById("toggleSignup").textContent=signupMode?"Ya tengo cuenta":"¿Crear cuenta nueva?";}
+function openConnectModal(){
+  openModal("Conectar a Supabase",
+    `<p class="hint">Pega la URL y la clave anónima de tu proyecto (Project Settings → API). Los datos vendrán de tu base en lugar de la demo.</p>
+     <div class="field"><label>Project URL</label><input id="sbUrl" type="text" placeholder="https://xxxx.supabase.co" value="${esc(LIVE.url)}"></div>
+     <div class="field"><label>Anon key</label><input id="sbKey" type="password" placeholder="eyJ..." value="${esc(LIVE.anonKey)}"></div>`,
+    `<button class="btn-primary" id="sbConnect" style="color:#04181B">Conectar</button>`);
+  document.getElementById("sbConnect").onclick=()=>{const url=document.getElementById("sbUrl").value.trim(),key=document.getElementById("sbKey").value.trim();if(!url||!key){toast("Faltan datos.");return;}if(connectSupabase(url,key)){closeOverlay();switchToLiveUI();toast("Conectado. Ahora inicia sesión.");}};
+}
+function enterDemo(role){state.isLive=false;document.getElementById("login").classList.add("hidden");document.getElementById("app").classList.remove("hidden");document.getElementById("meAv").textContent=(state.me[0]||"T").toUpperCase();updateSrcChip();setTool("pan");setRole(role);}
+async function enterLive(role,name){state.isLive=true;state.me=name;document.getElementById("login").classList.add("hidden");document.getElementById("app").classList.remove("hidden");document.getElementById("meAv").textContent=(name[0]||"U").toUpperCase();document.getElementById("lens").style.display="none";document.getElementById("connectBtn").style.display="none";setTool("pan");setRole(role);await liveRefresh();}
+async function doLogin(){
+  if(state._loginUI==="live"){
+    const email=document.getElementById("liEmail").value.trim(),pass=document.getElementById("liPass").value;
+    if(!email||!pass){toast("Ingresa correo y contraseña.");return;}
+    try{
+      if(signupMode){const role=state._signupRole||"patient";const name=document.getElementById("suName").value.trim()||email;
+        const{error}=await sb.auth.signUp({email,password:pass,options:{data:{role,full_name:name}}});if(error)throw error;
+        const{error:e2}=await sb.auth.signInWithPassword({email,password:pass});if(e2)throw e2;
+      }else{const{error}=await sb.auth.signInWithPassword({email,password:pass});if(error)throw error;}
+      const{data:{user}}=await sb.auth.getUser();
+      const{data:prof}=await sb.from("profiles").select("role,full_name").eq("id",user.id).single();
+      await enterLive((prof&&prof.role)||"patient",(prof&&prof.full_name)||user.email);
+    }catch(e){toast("Acceso: "+(e.message||e));}
+    return;
+  }
+  const role=state._loginRole||"patient";state.me=document.getElementById("loginName").value.trim()||(role==="patient"?PATIENT.name:DOCTOR.name);enterDemo(role);
+}
+document.getElementById("loginBtn").onclick=doLogin;
+document.getElementById("connectLink").onclick=e=>{e.preventDefault();openConnectModal();};
+document.getElementById("toggleSignup").onclick=e=>{e.preventDefault();toggleSignupMode();};
+document.getElementById("backToDemo").onclick=e=>{e.preventDefault();switchToDemoUI();};
+document.querySelectorAll("#lens button").forEach(b=>b.onclick=()=>setRole(b.dataset.l));
+document.getElementById("shareBtn").onclick=openShare;
+document.getElementById("connectBtn").onclick=openConnect;
+document.getElementById("settingsBtn").onclick=openSettings;
+document.getElementById("activityBtn").onclick=openActivity;
+document.getElementById("logoutBtn").onclick=()=>location.reload();
+document.getElementById("sideQuery").addEventListener("input",renderList);
+
+// Piloto: si llenaste SUPABASE_URL y SUPABASE_ANON_KEY arriba, arranca conectado.
+if(SUPABASE_URL&&SUPABASE_ANON_KEY){if(connectSupabase(SUPABASE_URL,SUPABASE_ANON_KEY))switchToLiveUI();}
+</script>
+</body>
+</html>
